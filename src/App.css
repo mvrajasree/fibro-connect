@@ -28,6 +28,50 @@
   color: #61dafb;
 }
 
+/* Custom range styling for nicer animated sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(90deg, var(--accent, #0d9488), var(--accent, #0d9488));
+  border-radius: 9999px;
+  outline: none;
+  transition: background .25s ease, box-shadow .2s ease;
+}
+input[type="range"]:focus {
+  box-shadow: 0 0 0 6px rgba(13,148,136,0.08);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--accent, #0d9488);
+  box-shadow: 0 0 0 0 rgba(13,148,136,0.25);
+  transition: transform .12s ease, box-shadow .22s ease, background .18s ease;
+}
+input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.16);
+  box-shadow: 0 0 0 8px rgba(13,148,136,0.12);
+}
+
+/* Firefox */
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--accent, #0d9488);
+  transition: transform .12s ease, box-shadow .22s ease, background .18s ease;
+}
+
+/* small scale helpers (used for numeric bump on change) */
+.scale-100 { transform: scale(1); }
+.scale-105 { transform: scale(1.05); }
+.transition-transform { transition-property: transform; }
+.duration-150 { transition-duration: 150ms; }
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
