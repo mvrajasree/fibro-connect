@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Calendar, Heart, MessageSquare, TrendingUp, Send, LogOut, LogIn, Sun, Moon } from 'lucide-react';
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 function App() {
   const [activeTab, setActiveTab] = useState('community');
@@ -39,6 +39,12 @@ function App() {
 
   // Check for existing session
   useEffect(() => {
+    if (!supabase) {
+      // No supabase configured — render app in degraded/read-only mode
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
@@ -73,6 +79,13 @@ function App() {
 
   const loadPosts = async () => {
     setPostsLoading(true);
+    if (!supabase) {
+      // degrade gracefully when no backend is configured
+      setPosts([]);
+      setPostsLoading(false);
+      return;
+    }
+
     const { error, data } = await supabase
       .from('posts')
       .select('*, comments(*)')
@@ -88,7 +101,7 @@ function App() {
   };
 
   const loadPainEntries = React.useCallback(async () => {
-    if (!user) return;
+    if (!user || !supabase) return;
 
     const { data, error } = await supabase
       .from('pain_entries')
@@ -103,6 +116,14 @@ function App() {
       setEntries(data || []);
     }
   }, [user]);
+
+  const ensureSupabase = () => {
+    if (!supabase) {
+      alert('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY and redeploy.');
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     loadPainEntries();
@@ -123,6 +144,8 @@ function App() {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
+    if (!ensureSupabase()) return;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -138,6 +161,8 @@ function App() {
 
   const handleSignIn = async (e) => {
     e.preventDefault();
+    if (!ensureSupabase()) return;
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -153,6 +178,8 @@ function App() {
   };
 
   const handleSignOut = async () => {
+    if (!ensureSupabase()) return;
+
     await supabase.auth.signOut();
     setUser(null);
   };
@@ -174,6 +201,8 @@ function App() {
       alert('Please fill in title and content');
       return;
     }
+
+    if (!ensureSupabase()) return;
 
     const { error } = await supabase
       .from('posts')
@@ -202,6 +231,8 @@ function App() {
       alert('Please sign in to like posts');
       return;
     }
+
+    if (!ensureSupabase()) return;
 
     // Check if already liked
     const { data: existingLike } = await supabase
@@ -239,6 +270,8 @@ function App() {
       return;
     }
 
+    if (!ensureSupabase()) return;
+
     const { error } = await supabase
       .from('comments')
       .insert([{
@@ -263,6 +296,8 @@ function App() {
       alert('Please sign in to record pain entries');
       return;
     }
+
+    if (!ensureSupabase()) return;
 
     const { error } = await supabase
       .from('pain_entries')
@@ -345,6 +380,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white">
+      {!isSupabaseConfigured && (
+        <div className="mx-auto max-w-6xl p-4">
+          <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 text-yellow-800 flex items-start gap-3">
+            <div className="font-medium">Supabase not configured — app running in degraded mode.</div>
+            <div className="text-sm">Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your deployment environment (e.g., Vercel) and redeploy to enable full functionality.</div>
+          </div>
+        </div>
+      )}
       {/* Auth Modal */}
       {showAuth && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
